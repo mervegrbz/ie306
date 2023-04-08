@@ -1,5 +1,7 @@
 from numpy import random
 from scipy import stats
+
+# Variable declarations
 patient_per_hour = 1
 S = 3
 Triage_nurse_rate = 0.476190476
@@ -8,15 +10,24 @@ p_2 = 1 - 0.2
 K = 5
 Healing_in_hospital_rate = 0.213333333
 healing_of_stable_rate = 0.16
-nurses = [{'arrival':0,'departure':0,'availability':True} for i in range(0,S)]
-nurses_work_times = [o for i in range(S)]
-beds = [{'departure':0,'availability':True}for i in range(0, K)]
 rejected_critical_patients = 0
-random.seed(2018400186)
-queue_nurse = []
-waiting_in_queue = []
 time_of_simulation = 0
 event_count = 0
+
+# Seed 
+random.seed(45) # 2018400186 + 2021400303
+
+
+
+
+nurses = [{'arrival':0,'departure':0,'availability':True} for i in range(0,S)]
+nurses_work_times = [0 for i in range(S)]
+beds = [{'departure':0,'availability':True}for i in range(0, K)]
+queue_nurse = []
+waiting_in_queue = []
+healing_time = []
+
+
 
 def Execute_Arrival(id):
   queue_nurse.append({'id':id,'arrival_time':time_of_simulation,'departure_time':0})
@@ -24,11 +35,12 @@ def Execute_Arrival(id):
     Execute_Arrival_Nurse()
 
 
+
 def Execute_Arrival_Nurse():
   patient = queue_nurse.pop()
   waiting_in_queue.append({'id':id,'arrival_time':patient['arrival_time'],'departure_time':time_of_simulation})
   departure_time = Generate_Nurse_Service_Time() + time_of_simulation
-  available_nurse = check_nurse_availability()-1
+  available_nurse = check_nurse_availability() - 1
   nurses[available_nurse]['departure'] = departure_time
   nurses[available_nurse]['availability'] = False
   nurses_work_times[available_nurse] += departure_time - time_of_simulation 
@@ -68,20 +80,20 @@ def Execute_Departure_Bed(patient):
 
 
 def Generate_interarrival():
-  return random.exponential(scale=float(60))*60
+  return random.exponential(scale=float(60)) * 60
 
 def Generate_Nurse_Service_Time():
-  return random.exponential(scale=Triage_nurse_rate)*60
+  return random.exponential(scale=Triage_nurse_rate) * 60
 
 def Generate_Condition():
   number = random.rand()
   return 'c' if number <= p_1  else 's' 
 
 def Generate_Hospital_Healing_Time():
-  return random.exponential(scale=Healing_in_hospital_rate)*60
+  return random.exponential(scale=Healing_in_hospital_rate) * 60
 
 def Generate_Home_Healing_Time(type):
-  stable = random.exponential(scale=healing_of_stable_rate)*60
+  stable = random.exponential(scale=healing_of_stable_rate) * 60
   if type=='s':
     return stable
   else:
