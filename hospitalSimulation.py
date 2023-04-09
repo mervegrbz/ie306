@@ -1,5 +1,6 @@
 from numpy import random
 from scipy import stats
+import pandas
 
 # Variable declarations
 patient_per_hour = 1
@@ -13,7 +14,7 @@ healing_of_stable_rate = 0.16
 rejected_critical_patients = 0
 time_of_simulation = 0
 event_count = 0
-
+last_arrival = 0
 # Seed 
 random.seed(45) # 2018400186 + 2021400303
 
@@ -80,29 +81,30 @@ def Execute_Departure_Bed(patient):
 
 
 def Generate_interarrival():
-  return random.exponential(scale=float(60)) * 60
+  return round(random.exponential(scale=float(60)),0) 
 
 def Generate_Nurse_Service_Time():
-  return random.exponential(scale=Triage_nurse_rate) * 60
+  return round(random.exponential(scale=float(60/Triage_nurse_rate)),0)
 
 def Generate_Condition():
   number = random.rand()
   return 'c' if number <= p_1  else 's' 
 
 def Generate_Hospital_Healing_Time():
-  return random.exponential(scale=Healing_in_hospital_rate) * 60
+  return round(random.exponential(scale=float(60/Healing_in_hospital_rate)),0)
 
 def Generate_Home_Healing_Time(type):
-  stable = random.exponential(scale=healing_of_stable_rate) * 60
+  stable = round(random.exponential(scale=float(60/healing_of_stable_rate)),0)
   if type=='s':
     return stable
   else:
     q=random.rand()
-    result=stats.norm.ppf(q,loc=1.75,scale=1.25)
-    return result*60 + stable
+    uniform_dist = stats.uniform.ppf(q,loc=1.75,scale=1.25)
+    return round(random.exponential(scale=float(60/((1+uniform_dist) * Healing_in_hospital_rate))),0) 
 
 def Arrival():
-  return time_of_simulation + Generate_interarrival()
+  last_arrival += Generate_interarrival()
+  return last_arrival
 
 def Departure_Triage():
   print('beloo')
@@ -142,11 +144,35 @@ def check_bed_availability():
   return 0
   
 # Arrival : A DepartureNurse: DN ArriveBed: AB DepartureBed : DB DepartureHome: DH
-interarrival_list = [ Generate_interarrival() for i in range(0,100)]
-interarrival_list.sort()
+interarrival_list = [ Generate_interarrival() for i in range(0,100)] # Arrival()
+
 event_list = [ ({'id':i+1, "time":value, 'type':'A' }) for i, value in enumerate(interarrival_list) ]
 
+nurse_service_time = [ Generate_Nurse_Service_Time() for i in range(0,100)]
+hospital_healing_time = [Generate_Hospital_Healing_Time() for i in range(0,100)]
+triage_result = [round(random.rand(),2) for i in range(0,100)]
+home_healing_stable = [Generate_Home_Healing_Time('s') for i in range(0,100)]
 
+home_healing_critical = [Generate_Home_Healing_Time('c') for i in range(0,100)]
+
+print(sum(nurse_service_time)/100)
+
+print(sum(hospital_healing_time)/100)
+
+triage_result_df = pandas.DataFrame(triage_result)
+home_healing_critical_df = pandas.DataFrame(home_healing_critical)
+home_healing_stable_df = pandas.DataFrame(home_healing_stable)
+nurse_service_time_df = pandas.DataFrame(nurse_service_time)
+hospital_healing_time_df = pandas.DataFrame(hospital_healing_time)
+interarrival_df = pandas.DataFrame(interarrival_list)
+
+triage_result_df.to_csv('triage_result.csv')
+home_healing_critical_df.to_csv('home_healing_critical.csv')
+home_healing_stable_df.to_csv('home_healing_stable.csv')
+hospital_healing_time_df.to_csv('hospital_healing_time.csv')
+nurse_service_time_df.to_csv('nurse_service_time.csv')
+interarrival_df.to_csv('interarrival.csv')
+exit()
 
 Time = 0
 
