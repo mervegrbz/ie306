@@ -20,14 +20,13 @@ random.seed(45) # 2018400186 + 2021400303
 
 
 
-
 nurses = [{'arrival':0,'departure':0,'availability':True} for i in range(0,S)]
 nurses_work_times = [0 for i in range(S)]
 beds = [{'departure':0,'availability':True}for i in range(0, K)]
 queue_nurse = []
 waiting_in_queue = []
 healing_time = []
-
+healed_patient = 0
 
 
 def Execute_Arrival(id):
@@ -71,11 +70,15 @@ def Execute_Departure_Nurse(patient):
 
 
 def Execute_Departure_HomeCare(patient):
+  global healed_patient
+  healed_patient+=1
   print('beloo',patient)
   
 
 def Execute_Departure_Bed(patient):
   global beds
+  global healed_patient
+  healed_patient+=1
   beds = [{'departure':bed['departure'], 'availability':time_of_simulation == bed['departure']} for bed in beds]
 
 
@@ -103,6 +106,7 @@ def Generate_Home_Healing_Time(type):
     return round(random.exponential(scale=float(60/((1+uniform_dist) * Healing_in_hospital_rate))),0) 
 
 def Arrival():
+  global last_arrival
   last_arrival += Generate_interarrival()
   return last_arrival
 
@@ -142,49 +146,44 @@ def check_bed_availability():
     if beds[i]['availability']:
       return i+1
   return 0
-  
-# Arrival : A DepartureNurse: DN ArriveBed: AB DepartureBed : DB DepartureHome: DH
-interarrival_list = [ Generate_interarrival() for i in range(0,100)] # Arrival()
+interarrival_list = [ Arrival() for i in range(0,100)] # Arrival()
 
 event_list = [ ({'id':i+1, "time":value, 'type':'A' }) for i, value in enumerate(interarrival_list) ]
-
-nurse_service_time = [ Generate_Nurse_Service_Time() for i in range(0,100)]
-hospital_healing_time = [Generate_Hospital_Healing_Time() for i in range(0,100)]
+# nurse_service_time = [ Generate_Nurse_Service_Time() for i in range(0,100)]
+# hospital_healing_time = [Generate_Hospital_Healing_Time() for i in range(0,100)]
 triage_result = [round(random.rand(),2) for i in range(0,100)]
-home_healing_stable = [Generate_Home_Healing_Time('s') for i in range(0,100)]
+# home_healing_stable = [Generate_Home_Healing_Time('s') for i in range(0,100)]
 
-home_healing_critical = [Generate_Home_Healing_Time('c') for i in range(0,100)]
+# home_healing_critical = [Generate_Home_Healing_Time('c') for i in range(0,100)]
 
-print(sum(nurse_service_time)/100)
 
-print(sum(hospital_healing_time)/100)
 
-triage_result_df = pandas.DataFrame(triage_result)
-home_healing_critical_df = pandas.DataFrame(home_healing_critical)
-home_healing_stable_df = pandas.DataFrame(home_healing_stable)
-nurse_service_time_df = pandas.DataFrame(nurse_service_time)
-hospital_healing_time_df = pandas.DataFrame(hospital_healing_time)
-interarrival_df = pandas.DataFrame(interarrival_list)
 
-triage_result_df.to_csv('triage_result.csv')
-home_healing_critical_df.to_csv('home_healing_critical.csv')
-home_healing_stable_df.to_csv('home_healing_stable.csv')
-hospital_healing_time_df.to_csv('hospital_healing_time.csv')
-nurse_service_time_df.to_csv('nurse_service_time.csv')
-interarrival_df.to_csv('interarrival.csv')
-exit()
+# print(sum(nurse_service_time)/100)
+
+# print(sum(hospital_healing_time)/100)
+
+# triage_result_df = pandas.DataFrame(triage_result)
+# home_healing_critical_df = pandas.DataFrame(home_healing_critical)
+# home_healing_stable_df = pandas.DataFrame(home_healing_stable)
+# nurse_service_time_df = pandas.DataFrame(nurse_service_time)
+# hospital_healing_time_df = pandas.DataFrame(hospital_healing_time)
+# interarrival_df = pandas.DataFrame(interarrival_list)
+
+
+
 
 Time = 0
 
 
-while event_count < 100:
+while healed_patient < 6:
   event_list.sort(key=lambda x: (x['time']))
   event = event_list.pop(0)
   time_of_simulation = event['time']
   Execute_Event(event)
   event_count += 1
 
-      
+       
 
 
 
