@@ -48,6 +48,7 @@ def Execute_Departure_Nurse(patient):
     duration_homecare +=1
     departure_from_heal = Retrieve_Home_Healing_Time('s') + time_of_simulation
     total_time_healed += departure_from_heal - time_of_simulation
+    event_list.append({ 'id': patient,'time': time_of_simulation,'type': 'AH' })
     event_list.append({'id':patient,'time':departure_from_heal, 'type':'DH'})
   else:
     total_critical += 1
@@ -57,17 +58,25 @@ def Execute_Departure_Nurse(patient):
       total_time_healed += departure_from_heal - time_of_simulation
       beds[check_bed_availability()-1]['departure'] = departure_from_heal
       beds[check_bed_availability()-1]['availability'] = False
+      event_list.append({ 'id': patient,'time': time_of_simulation,'type': 'AB' })
       event_list.append({ 'id': patient,'time': departure_from_heal,'type': 'DB' })
     else:
       total_homesick += 1
       duration_homecare +=1
       rejected_critical_patients += 1
+      event_list.append({ 'id': patient,'time': time_of_simulation,'type': 'AH' })
       departure_from_heal = Retrieve_Home_Healing_Time('c') + time_of_simulation
       total_time_healed += departure_from_heal - time_of_simulation
       event_list.append({ 'id': patient,'time': departure_from_heal,'type': 'DH' })
   if (check_nurse_availability()):
     if(len(queue_nurse)):
       event_list.append({ 'id': patient,'time': time_of_simulation,'type': 'AN' })
+
+def Execute_Arrival_Home(patient):
+  print('beloo',patient)
+
+def Execute_Arrival_Bed(patient):
+  print('beloo',patient)
 
 def Execute_Departure_HomeCare(patient):
   print('beloo',patient)
@@ -153,6 +162,10 @@ def Execute_Event(event):
     Execute_Arrival(event['id'])
   elif event['type'] == 'AN':
     Execute_Arrival_Nurse()
+  elif event['type'] == 'AH':
+    Execute_Arrival_Home(event['id'])
+  elif event['type'] == 'AB':
+    Execute_Arrival_Home(event['id'])
   elif event['type'] == 'DN':
     Execute_Departure_Nurse(event['id'])
   elif event['type'] == 'DH':
