@@ -15,25 +15,15 @@ rejected_critical_patients = 0
 random.seed(45)
 nurses_work_times = [0 for i in range(S)]
 beds_work_times = [ 0 for i in range(K)] 
-
-queue_nurse = []
-waiting_in_queue = []
-time_of_simulation = 0
-event_count = 0
-total_healed = 0
-total_sick = 0 
-total_in_hospital = 0
-total_homesick = 0
-arrived_patient = 0
-last_arrived = 0
-total_triage_time = 0
-total_critical = 0
-
+duration_homecare = 0
+queue_nurse,waiting_in_queue = []
+time_of_simulation, event_count, total_healed, total_sick, total_in_hospital, total_homesick = 0
+arrived_patient, last_arrived, total_triage_time, total_critical, total_time_healed = 0
 
 def Execute_Arrival(id):
   queue_nurse.append({'id':id,'arrival_time':time_of_simulation,'departure_time':0})
   if check_nurse_availability():
-    Execute_Arrival_Nurse()
+    event_list.append({ 'id': id,'time': time_of_simulation,'type': 'AN' })
 
 def Execute_Arrival_Nurse():
   patient = queue_nurse.pop(0)
@@ -51,34 +41,40 @@ def Execute_Arrival_Nurse():
 def Execute_Departure_Nurse(patient):
   condition = Retrieve_Condition()
   global nurses,total_homesick
-  global rejected_critical_patients, total_critical
+  global rejected_critical_patients, total_critical, duration_homecare, total_time_healed
   nurses = [{'departure':nurse['departure'],'availability':time_of_simulation >= nurse['departure']} for nurse in nurses]
   if condition == 's':
     total_homesick += 1
+    duration_homecare +=1
     departure_from_heal = Retrieve_Home_Healing_Time('s') + time_of_simulation
+    total_time_healed += departure_from_heal - time_of_simulation
     event_list.append({'id':patient,'time':departure_from_heal, 'type':'DH'})
   else:
     total_critical += 1
     if(check_bed_availability()):
       departure_from_heal = Retrieve_Hospital_Healing_Time() + time_of_simulation
       beds_work_times[check_bed_availability()-1] = departure_from_heal - time_of_simulation
+      total_time_healed += departure_from_heal - time_of_simulation
       beds[check_bed_availability()-1]['departure'] = departure_from_heal
       beds[check_bed_availability()-1]['availability'] = False
       event_list.append({ 'id': patient,'time': departure_from_heal,'type': 'DB' })
     else:
       total_homesick += 1
+      duration_homecare +=1
       rejected_critical_patients += 1
       departure_from_heal = Retrieve_Home_Healing_Time('c') + time_of_simulation
+      total_time_healed += departure_from_heal - time_of_simulation
       event_list.append({ 'id': patient,'time': departure_from_heal,'type': 'DH' })
   if (check_nurse_availability()):
     if(len(queue_nurse)):
-      Execute_Arrival_Nurse()
+      event_list.append({ 'id': patien,'time': time_of_simulation,'type': 'AN' })
 
 def Execute_Departure_HomeCare(patient):
   print('beloo',patient)
-  global total_healed, total_homesick
+  global total_healed, total_homesick, duration_homecare
   total_healed += 1
   total_homesick -= 1
+  duration_homecare -= 1
   
 
 def Execute_Departure_Bed(patient):
@@ -132,12 +128,12 @@ def Retrieve_Hospital_Healing_Time():
   return hospital_healing_time.pop(0)
 
 def Retrieve_Home_Healing_Time(type):
-  stable = home_healing_stable.pop(0)
   if type=='s':
+    stable = home_healing_stable.pop(0)
     return stable
   else:
     result = home_healing_critical.pop(0)
-    return result*60 + stable
+    return result 
 
 def Departure_Triage():
   print('beloo')
@@ -155,6 +151,8 @@ def Execute_Event(event):
   Advance_Time(time)
   if event['type'] == 'A':
     Execute_Arrival(event['id'])
+  elif event['type'] == 'AN':
+    Execute_Arrival_Nurse(event['id'])
   elif event['type'] == 'DN':
     Execute_Departure_Nurse(event['id'])
   elif event['type'] == 'DH':
@@ -185,16 +183,24 @@ triage_result = [round(random.rand(),2) for i in range(0,100)]
 home_healing_stable = [Generate_Home_Healing_Time('s') for i in range(0,100)]
 home_healing_critical = [Generate_Home_Healing_Time('c') for i in range(0,100)]
 simulation_table = []
+total_bed_time = 0
+total_nurse_time = 0
+average_patient_home = 0
 while total_healed < 5:
+  duration_homecare = 0 
+  earlier_date = time_of_simulation
   event_list.sort(key=lambda x: (x['time'],x['id']),reverse = True)
   event = event_list.pop()
   time_of_simulation = event['time']
   Execute_Event(event)
   total_bed = sum([ 0 if i['availability'] else 1 for i in beds])
+  total_bed_time += (time_of_simulation - earlier_date)*total_bed
   total_nurse =  sum([ 0 if i['availability'] else 1 for i in nurses])
+  total_nurse_time += total_nurse*(time_of_simulation - earlier_date)
   total_sick = len(queue_nurse) + total_bed + total_nurse + total_homesick 
   simulation_table.append({ 'time':time_of_simulation, 'total Sick':total_sick, 'total in hospital':total_sick - total_homesick, 'total in queue': len(queue_nurse), 'total in bed': total_bed ,'total in nurse':total_nurse, 'total healed': total_healed}| event)
   event_count += 1
+  average_patient_home += duration_homecare * (time_of_simulation - earlier_date) 
 
 simulation_table_df = pd.DataFrame(simulation_table)
 simulation_table_df.to_csv('Egecanin_gotu.csv')
@@ -210,3 +216,7 @@ utilization_nurse = nurse_work/float(time_of_simulation)
 print(utilization_nurse)
 utilization_bed =  bed_work/float(time_of_simulation)
 print(utilization_bed)
+print(total_bed_time/float(K)) 
+print(total_nurse_time/float(S)) 
+print(average_patient_home/time_of_simulation)
+print(total_time_healed/total_healed)
