@@ -16,9 +16,9 @@ random.seed(45)
 nurses_work_times = [0 for i in range(S)]
 beds_work_times = [ 0 for i in range(K)] 
 duration_homecare = 0
-queue_nurse,waiting_in_queue = []
-time_of_simulation, event_count, total_healed, total_sick, total_in_hospital, total_homesick = 0
-arrived_patient, last_arrived, total_triage_time, total_critical, total_time_healed = 0
+queue_nurse,waiting_in_queue = [],[]
+time_of_simulation, event_count, total_healed, total_sick, total_in_hospital, total_homesick = 0,0,0,0,0,0
+arrived_patient, last_arrived, total_triage_time, total_critical, total_time_healed = 0,0,0,0,0
 
 def Execute_Arrival(id):
   queue_nurse.append({'id':id,'arrival_time':time_of_simulation,'departure_time':0})
@@ -67,7 +67,7 @@ def Execute_Departure_Nurse(patient):
       event_list.append({ 'id': patient,'time': departure_from_heal,'type': 'DH' })
   if (check_nurse_availability()):
     if(len(queue_nurse)):
-      event_list.append({ 'id': patien,'time': time_of_simulation,'type': 'AN' })
+      event_list.append({ 'id': patient,'time': time_of_simulation,'type': 'AN' })
 
 def Execute_Departure_HomeCare(patient):
   print('beloo',patient)
@@ -152,7 +152,7 @@ def Execute_Event(event):
   if event['type'] == 'A':
     Execute_Arrival(event['id'])
   elif event['type'] == 'AN':
-    Execute_Arrival_Nurse(event['id'])
+    Execute_Arrival_Nurse()
   elif event['type'] == 'DN':
     Execute_Departure_Nurse(event['id'])
   elif event['type'] == 'DH':
